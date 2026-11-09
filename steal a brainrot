@@ -1,0 +1,388 @@
+-- Brainrot Executor UI
+-- Runtime: Roblox Lua (Luau) | Executor: Universal (Synapse X, KRNL, Fluxus, Hydrogen)
+-- Mobile-friendly touch input + mouse input, draggable, minimizable, restorable
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local lp = Players.LocalPlayer
+local gui = lp:WaitForChild("PlayerGui")
+
+-- Destroy old instance on reinject
+if gui:FindFirstChild("BrainrotUI") then
+    gui:FindFirstChild("BrainrotUI"):Destroy()
+end
+
+-- ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BrainrotUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = gui
+
+-- ── MAIN FRAME ──────────────────────────────────────────────────────────────
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.new(0, 300, 0, 380)
+Main.Position = UDim2.new(0, 60, 0, 120)
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+Main.BorderSizePixel = 0
+Main.ClipsDescendants = true
+Main.Parent = ScreenGui
+
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
+
+local Stroke = Instance.new("UIStroke", Main)
+Stroke.Color = Color3.fromRGB(80, 60, 200)
+Stroke.Thickness = 1.5
+
+-- ── TITLE BAR ───────────────────────────────────────────────────────────────
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Size = UDim2.new(1, 0, 0, 36)
+TitleBar.BackgroundColor3 = Color3.fromRGB(25, 20, 50)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = Main
+
+Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 10)
+
+local TitleFix = Instance.new("Frame") -- covers bottom corners of titlebar
+TitleFix.Size = UDim2.new(1, 0, 0, 10)
+TitleFix.Position = UDim2.new(0, 0, 1, -10)
+TitleFix.BackgroundColor3 = Color3.fromRGB(25, 20, 50)
+TitleFix.BorderSizePixel = 0
+TitleFix.Parent = TitleBar
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Text = "⚡ brainrot executor"
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextSize = 14
+TitleLabel.TextColor3 = Color3.fromRGB(180, 160, 255)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Size = UDim2.new(1, -70, 1, 0)
+TitleLabel.Position = UDim2.new(0, 10, 0, 0)
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = TitleBar
+
+-- Minimize button
+local MinBtn = Instance.new("TextButton")
+MinBtn.Text = "—"
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 16
+MinBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+MinBtn.BackgroundColor3 = Color3.fromRGB(50, 40, 90)
+MinBtn.Size = UDim2.new(0, 28, 0, 22)
+MinBtn.Position = UDim2.new(1, -62, 0.5, -11)
+MinBtn.BorderSizePixel = 0
+MinBtn.Parent = TitleBar
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
+
+-- Close (hide) button
+local HideBtn = Instance.new("TextButton")
+HideBtn.Text = "✕"
+HideBtn.Font = Enum.Font.GothamBold
+HideBtn.TextSize = 14
+HideBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+HideBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
+HideBtn.Size = UDim2.new(0, 28, 0, 22)
+HideBtn.Position = UDim2.new(1, -30, 0.5, -11)
+HideBtn.BorderSizePixel = 0
+HideBtn.Parent = TitleBar
+Instance.new("UICorner", HideBtn).CornerRadius = UDim.new(0, 6)
+
+-- ── CONTENT AREA ────────────────────────────────────────────────────────────
+local Content = Instance.new("Frame")
+Content.Name = "Content"
+Content.Size = UDim2.new(1, 0, 1, -36)
+Content.Position = UDim2.new(0, 0, 0, 36)
+Content.BackgroundTransparency = 1
+Content.Parent = Main
+
+-- Script box
+local ScriptBox = Instance.new("TextBox")
+ScriptBox.Name = "ScriptBox"
+ScriptBox.PlaceholderText = "-- paste script here, chef"
+ScriptBox.Text = ""
+ScriptBox.Font = Enum.Font.Code
+ScriptBox.TextSize = 12
+ScriptBox.TextColor3 = Color3.fromRGB(220, 220, 220)
+ScriptBox.PlaceholderColor3 = Color3.fromRGB(90, 90, 110)
+ScriptBox.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+ScriptBox.BorderSizePixel = 0
+ScriptBox.Size = UDim2.new(1, -16, 0, 200)
+ScriptBox.Position = UDim2.new(0, 8, 0, 8)
+ScriptBox.MultiLine = true
+ScriptBox.TextWrapped = true
+ScriptBox.TextXAlignment = Enum.TextXAlignment.Left
+ScriptBox.TextYAlignment = Enum.TextYAlignment.Top
+ScriptBox.ClearTextOnFocus = false
+ScriptBox.Parent = Content
+Instance.new("UICorner", ScriptBox).CornerRadius = UDim.new(0, 6)
+
+local ScriptStroke = Instance.new("UIStroke", ScriptBox)
+ScriptStroke.Color = Color3.fromRGB(60, 50, 120)
+ScriptStroke.Thickness = 1
+
+-- Status label
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Text = "idle"
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextSize = 11
+StatusLabel.TextColor3 = Color3.fromRGB(120, 110, 180)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Size = UDim2.new(1, -16, 0, 18)
+StatusLabel.Position = UDim2.new(0, 8, 0, 214)
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.Parent = Content
+
+-- ── BUTTONS ROW ─────────────────────────────────────────────────────────────
+local function makeBtn(text, xpos, color)
+    local b = Instance.new("TextButton")
+    b.Text = text
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 12
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.BackgroundColor3 = color
+    b.Size = UDim2.new(0, 84, 0, 32)
+    b.Position = UDim2.new(0, xpos, 0, 236)
+    b.BorderSizePixel = 0
+    b.Parent = Content
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 7)
+    return b
+end
+
+local ExecBtn  = makeBtn("▶ Execute",  8,   Color3.fromRGB(60, 180, 90))
+local ClearBtn = makeBtn("✕ Clear",    100, Color3.fromRGB(160, 50, 50))
+local CopyBtn  = makeBtn("⎘ Copy",     192, Color3.fromRGB(50, 90, 180))
+
+-- ── QUICK SCRIPTS ────────────────────────────────────────────────────────────
+local QLabelTitle = Instance.new("TextLabel")
+QLabelTitle.Text = "quick scripts"
+QLabelTitle.Font = Enum.Font.GothamBold
+QLabelTitle.TextSize = 11
+QLabelTitle.TextColor3 = Color3.fromRGB(120, 100, 200)
+QLabelTitle.BackgroundTransparency = 1
+QLabelTitle.Size = UDim2.new(1, -16, 0, 16)
+QLabelTitle.Position = UDim2.new(0, 8, 0, 278)
+QLabelTitle.TextXAlignment = Enum.TextXAlignment.Left
+QLabelTitle.Parent = Content
+
+-- Quick script definitions
+local quickScripts = {
+    { label = "Inf Jump",   code = [[
+local lp = game:GetService("Players").LocalPlayer
+local uis = game:GetService("UserInputService")
+lp.CharacterAdded:Connect(function(char)
+    local hum = char:WaitForChild("Humanoid")
+    uis.JumpRequest:Connect(function()
+        hum:ChangeState(Enum.HumanoidStateType.Jumping)
+    end)
+end)]] },
+    { label = "Speed x3",   code = [[
+local hum = game:GetService("Players").LocalPlayer.Character:WaitForChild("Humanoid")
+hum.WalkSpeed = 48]] },
+    { label = "Noclip",     code = [[
+local run = game:GetService("RunService")
+local lp  = game:GetService("Players").LocalPlayer
+run.Stepped:Connect(function()
+    if lp.Character then
+        for _, p in pairs(lp.Character:GetDescendants()) do
+            if p:IsA("BasePart") then p.CanCollide = false end
+        end
+    end
+end)]] },
+}
+
+local qBtnY = 296
+for _, qs in ipairs(quickScripts) do
+    local qb = Instance.new("TextButton")
+    qb.Text = qs.label
+    qb.Font = Enum.Font.Gotham
+    qb.TextSize = 11
+    qb.TextColor3 = Color3.fromRGB(210, 200, 255)
+    qb.BackgroundColor3 = Color3.fromRGB(30, 25, 55)
+    qb.Size = UDim2.new(0, 84, 0, 24)
+    qb.Position = UDim2.new(0, 8 + (84 + 8) * (_ - 1), 0, qBtnY)
+    qb.BorderSizePixel = 0
+    qb.Parent = Content
+    Instance.new("UICorner", qb).CornerRadius = UDim.new(0, 6)
+    local qStroke = Instance.new("UIStroke", qb)
+    qStroke.Color = Color3.fromRGB(80, 60, 160)
+    qStroke.Thickness = 1
+
+    local scriptRef = qs.code
+    qb.MouseButton1Click:Connect(function()
+        ScriptBox.Text = scriptRef
+        StatusLabel.Text = "loaded: " .. qs.label
+    end)
+    -- mobile touch
+    qb.TouchTap:Connect(function()
+        ScriptBox.Text = scriptRef
+        StatusLabel.Text = "loaded: " .. qs.label
+    end)
+end
+
+-- ── RESTORE BUBBLE ───────────────────────────────────────────────────────────
+local Bubble = Instance.new("TextButton")
+Bubble.Text = "⚡"
+Bubble.Font = Enum.Font.GothamBold
+Bubble.TextSize = 20
+Bubble.TextColor3 = Color3.fromRGB(180, 160, 255)
+Bubble.BackgroundColor3 = Color3.fromRGB(25, 20, 50)
+Bubble.Size = UDim2.new(0, 48, 0, 48)
+Bubble.Position = UDim2.new(0, 60, 0, 120)
+Bubble.BorderSizePixel = 0
+Bubble.Visible = false
+Bubble.Parent = ScreenGui
+Instance.new("UICorner", Bubble).CornerRadius = UDim.new(1, 0)
+local BStroke = Instance.new("UIStroke", Bubble)
+BStroke.Color = Color3.fromRGB(80, 60, 200)
+BStroke.Thickness = 2
+
+-- ── DRAG LOGIC ───────────────────────────────────────────────────────────────
+local function makeDraggable(frame, handle)
+    local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        local newPos = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+        frame.Position = newPos
+    end
+
+    -- Mouse
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or
+           input.UserInputType == Enum.UserInputType.Touch then
+            dragging  = true
+            dragStart = input.Position
+            startPos  = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    handle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or
+           input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+end
+
+makeDraggable(Main,   TitleBar)
+makeDraggable(Bubble, Bubble)
+
+-- ── MINIMIZE / HIDE / RESTORE ────────────────────────────────────────────────
+local minimized = false
+
+local function setMinimized(state)
+    minimized = state
+    if state then
+        TweenService:Create(Main, TweenInfo.new(0.2), {
+            Size = UDim2.new(0, 300, 0, 36)
+        }):Play()
+        MinBtn.Text = "□"
+    else
+        TweenService:Create(Main, TweenInfo.new(0.2), {
+            Size = UDim2.new(0, 300, 0, 380)
+        }):Play()
+        MinBtn.Text = "—"
+    end
+end
+
+MinBtn.MouseButton1Click:Connect(function()
+    setMinimized(not minimized)
+end)
+MinBtn.TouchTap:Connect(function()
+    setMinimized(not minimized)
+end)
+
+HideBtn.MouseButton1Click:Connect(function()
+    Main.Visible = false
+    Bubble.Visible = true
+    Bubble.Position = Main.Position
+end)
+HideBtn.TouchTap:Connect(function()
+    Main.Visible = false
+    Bubble.Visible = true
+    Bubble.Position = Main.Position
+end)
+
+Bubble.MouseButton1Click:Connect(function()
+    Main.Visible = true
+    Bubble.Visible = false
+end)
+Bubble.TouchTap:Connect(function()
+    Main.Visible = true
+    Bubble.Visible = false
+end)
+
+-- ── EXECUTE ──────────────────────────────────────────────────────────────────
+local function safeExec(src)
+    local ok, err = pcall(loadstring(src))
+    if ok then
+        StatusLabel.Text = "✓ executed"
+        StatusLabel.TextColor3 = Color3.fromRGB(80, 220, 100)
+    else
+        StatusLabel.Text = "✗ " .. tostring(err):sub(1, 60)
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+    end
+    task.delay(3, function()
+        StatusLabel.Text = "idle"
+        StatusLabel.TextColor3 = Color3.fromRGB(120, 110, 180)
+    end)
+end
+
+ExecBtn.MouseButton1Click:Connect(function()
+    local src = ScriptBox.Text
+    if src == "" then
+        StatusLabel.Text = "nothing to run, chef"
+        return
+    end
+    StatusLabel.Text = "running…"
+    StatusLabel.TextColor3 = Color3.fromRGB(220, 200, 80)
+    safeExec(src)
+end)
+ExecBtn.TouchTap:Connect(function()
+    local src = ScriptBox.Text
+    if src == "" then StatusLabel.Text = "nothing to run, chef" return end
+    StatusLabel.Text = "running…"
+    StatusLabel.TextColor3 = Color3.fromRGB(220, 200, 80)
+    safeExec(src)
+end)
+
+ClearBtn.MouseButton1Click:Connect(function()
+    ScriptBox.Text = ""
+    StatusLabel.Text = "cleared"
+    StatusLabel.TextColor3 = Color3.fromRGB(120, 110, 180)
+end)
+ClearBtn.TouchTap:Connect(function()
+    ScriptBox.Text = ""
+    StatusLabel.Text = "cleared"
+end)
+
+CopyBtn.MouseButton1Click:Connect(function()
+    setclipboard(ScriptBox.Text)
+    StatusLabel.Text = "copied to clipboard"
+end)
+CopyBtn.TouchTap:Connect(function()
+    setclipboard(ScriptBox.Text)
+    StatusLabel.Text = "copied to clipboard"
+end)
